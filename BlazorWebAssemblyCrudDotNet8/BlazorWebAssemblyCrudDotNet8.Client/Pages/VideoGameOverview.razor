@@ -1,0 +1,91 @@
+﻿@page "/videogames"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager 
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+<PageTitle>Video Games</PageTitle>
+
+<h1>Video Games</h1>
+
+@if (videoGames.Count == 0)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="80%"  >
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="50px" Height="50px" />
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="50px" Height="50px" />
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="50px" Height="50px" />
+        <MudSkeleton SkeletonType="SkeletonType.Text" Width="50px" Height="50px" />
+    </MudSkeleton>
+}
+else
+{
+    <MudDataGrid Items="@videoGames">
+        <Columns>
+            <PropertyColumn Property="x => x.Title" Title="Nome" />
+            <PropertyColumn Property="x => x.Publisher" />
+            <PropertyColumn Property="x => x.ReleaseYear" />
+            <TemplateColumn CellClass="d-flex justify-end">
+                <CellTemplate>
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditGame(context.Item.Id))" />
+                    <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Delete" OnClick="@(() => DeleteGame(context.Item.Id))" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+    @*<table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Publisher</th>
+                <th>Release Year</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var videoGame in videoGames)
+            {
+                <tr>
+                    <td>@videoGame.Title</td>
+                    <td>@videoGame.Publisher</td>
+                    <td>@videoGame.ReleaseYear</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="@(() => EditGame(@videoGame.Id))">Editar</button>
+                        <button class="btn btn-danger" @onclick="@(() => DeleteGame(@videoGame.Id))">Excluir</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>*@
+}
+<button class="btn btn-primary mt-5" @onclick="AddGame">Novo Jogo</button>
+
+@code {
+    List<VideoGame> videoGames = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGames();
+    }
+
+    void AddGame()
+    {
+        NavigationManager.NavigateTo("edit-game");
+    }
+
+    void EditGame(int id)
+    {
+        NavigationManager.NavigateTo($"edit-game/{id}");
+    }
+
+    async Task DeleteGame(int id)
+    {
+        var result = await Http.DeleteAsync($"api/videogames/{id}");
+        if (result.IsSuccessStatusCode)
+            await LoadGames();
+    }
+
+    async Task LoadGames()
+    {
+        var result = await Http.GetFromJsonAsync<List<VideoGame>>("api/VideoGames");
+        if (result is not null)
+            videoGames = result;
+    }
+
+}

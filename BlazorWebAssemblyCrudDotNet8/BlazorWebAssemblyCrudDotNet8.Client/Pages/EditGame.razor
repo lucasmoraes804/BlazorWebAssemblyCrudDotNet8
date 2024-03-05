@@ -1,0 +1,73 @@
+﻿@page "/edit-game"
+@page "/edit-game/{id:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (Id == null)
+{
+    <h3>Criar Jogo</h3>
+}
+else
+{
+    <h3>Editar @Game.Title</h3>
+}
+
+<EditForm Model="Game" OnSubmit="HandleSubmit">
+    <div>
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <!--<ValidationSummary></ValidationSummary>-->
+    </div>
+    <div>
+        <label for="title">Nome</label>
+        <MudTextField id="title" @bind-Value="Game.Title" Variant="Variant.Outlined"></MudTextField>
+        <ValidationMessage For="@(() => Game.Title)"></ValidationMessage>
+    </div>
+    <div>
+        <label for="publisher">Publicado</label>
+        <MudTextField id="publisher" @bind-Value="Game.Publisher" Variant="Variant.Outlined"></MudTextField>
+        <ValidationMessage For="@(() => Game.Publisher)"></ValidationMessage>
+    </div>
+    <div>
+        <label for="releaseYear">Ano</label>
+        <MudNumericField id="releaseYear" @bind-Value="Game.ReleaseYear" Variant="Variant.Outlined"></MudNumericField>
+        <ValidationMessage For="@(() => Game.ReleaseYear)"></ValidationMessage>
+    </div>
+    <button type="submit" class="btn btn-primary mt-5">@(Id.HasValue ? "Editar" : "Salvar")</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+    public VideoGame Game { get; set; } = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id is not null)
+        {
+            var result = await Http.GetFromJsonAsync<VideoGame>($"api/VideoGames/{Id}");
+            if (result is not null)
+                Game = result;
+        }
+    }
+
+    async Task HandleSubmit(EditContext form)
+    {
+        if (!form.Validate())
+            return;
+        
+        if (Id is not null)
+        {
+            Game.Id = Id.Value;
+            var result = await Http.PutAsJsonAsync("api/videogames/", Game);
+            Game = await result.Content.ReadFromJsonAsync<VideoGame>();
+            NavigationManager.NavigateTo("videogames");
+        }
+        else
+        {
+            var result = await Http.PostAsJsonAsync("api/videogames/", Game);
+            Game = await result.Content.ReadFromJsonAsync<VideoGame>();
+        }
+    }
+
+}
